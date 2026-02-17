@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Learn effective unit testing strategies for ASP.NET Core applications using xUnit, including mocking dependencies, testing controllers, services, and integration testing for robust applications.">
+    <meta name="keywords" content="unit testing, xUnit, ASP.NET Core, testing, mocking, TDD, integration testing">
+    <meta name="author" content="Rajkumar Bhatt">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Unit Testing ASP.NET Core Applications with xUnit">
+    <meta property="og:description"
+        content="Learn effective unit testing strategies for ASP.NET Core applications using xUnit.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://backendcraftdev.github.io/posts/unit-testing-xunit-aspnet-core.html">
+    <meta property="og:image" content="https://backendcraftdev.github.io/og-image.jpg">
+    <meta property="article:published_time" content="2026-01-12T10:00:00+00:00">
+    <meta property="article:author" content="Rajkumar Bhatt">
+    <meta property="article:section" content="Testing">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Unit Testing ASP.NET Core Applications with xUnit">
+    <meta name="twitter:description"
+        content="Learn effective unit testing strategies for ASP.NET Core applications using xUnit.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="canonical" href="https://backendcraftdev.github.io/posts/unit-testing-xunit-aspnet-core.html">
+    <title>Unit Testing ASP.NET Core Applications with xUnit - BackendCraft</title>
+    <link rel="stylesheet" href="../styles.css">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Unit Testing ASP.NET Core Applications with xUnit",
+        "description": "Learn effective unit testing strategies for ASP.NET Core applications using xUnit, including mocking dependencies, testing controllers, and integration testing.",
+        "image": "https://backendcraftdev.github.io/og-image.jpg",
+        "datePublished": "2026-01-12T10:00:00+00:00",
+        "dateModified": "2026-01-12T10:00:00+00:00",
+        "author": {
+            "@type": "Person",
+            "name": "Rajkumar Bhatt"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "BackendCraft",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://backendcraftdev.github.io/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://backendcraftdev.github.io/posts/unit-testing-xunit-aspnet-core.html"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="../index.html">Backend<span class="accent">Craft</span></a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <article class="post-content">
+            <header class="post-header">
+                <div class="post-meta">
+                    <time datetime="2026-01-12">January 12, 2026</time>
+                    <span class="post-category">Testing</span>
+                </div>
+                <h1>Unit Testing ASP.NET Core Applications with xUnit</h1>
+                <p class="post-intro">Learn effective unit testing strategies for ASP.NET Core applications using xUnit,
+                    including mocking dependencies, testing controllers, services, and integration testing for building
+                    robust, reliable applications.</p>
+            </header>
+
+            <section class="post-body">
+                <h2>Why Unit Testing Matters</h2>
+                <p>Unit testing is essential for building reliable software. It helps you catch bugs early, enables
+                    confident refactoring, serves as documentation, and ensures your code works as expected. In ASP.NET
+                    Core, xUnit has become the de facto standard testing framework.</p>
+
+                <h2>Setting Up xUnit</h2>
+                <p>Create a test project and add necessary packages:</p>
+                <pre><code>dotnet new xunit -n MyApi.Tests
+cd MyApi.Tests
+dotnet add reference ../MyApi/MyApi.csproj
+dotnet add package Moq
+dotnet add package FluentAssertions
+dotnet add package Microsoft.AspNetCore.Mvc.Testing</code></pre>
+
+                <h2>Basic xUnit Test Structure</h2>
+                <p>xUnit tests follow the Arrange-Act-Assert (AAA) pattern:</p>
+                <pre><code>public class CalculatorTests
+{
+    [Fact]
+    public void Add_TwoNumbers_ReturnsSum()
+    {
+        // Arrange
+        var calculator = new Calculator();
+        
+        // Act
+        var result = calculator.Add(5, 3);
+        
+        // Assert
+        Assert.Equal(8, result);
+    }
+
+    [Theory]
+    [InlineData(2, 3, 5)]
+    [InlineData(0, 0, 0)]
+    [InlineData(-1, 1, 0)]
+    [InlineData(10, -5, 5)]
+    public void Add_VariousInputs_ReturnsCorrectSum(
+        int a, int b, int expected)
+    {
+        // Arrange
+        var calculator = new Calculator();
+        
+        // Act
+        var result = calculator.Add(a, b);
+        
+        // Assert
+        Assert.Equal(expected, result);
+    }
+}</code></pre>
+
+                <h2>Testing Services with Mocking</h2>
+                <p>Use Moq to mock dependencies and isolate the unit under test:</p>
+
+                <h3>Service to Test</h3>
+                <pre><code>public class ProductService : IProductService
+{
+    private readonly IProductRepository _repository;
+    private readonly ILogger&lt;ProductService&gt; _logger;
+
+    public ProductService(
+        IProductRepository repository,
+        ILogger&lt;ProductService&gt; logger)
+    {
+        _repository = repository;
+        _logger = logger;
+    }
+
+    public async Task&lt;ProductDto&gt; GetProductByIdAsync(int id)
+    {
+        _logger.LogInformation("Getting product with ID: {ProductId}", id);
+        
+        var product = await _repository.GetByIdAsync(id);
+        
+        if (product == null)
+        {
+            _logger.LogWarning("Product not found: {ProductId}", id);
+            return null;
+        }
+
+        return new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Price = product.Price
+        };
+    }
+}</code></pre>
+
+                <h3>Unit Test with Mocking</h3>
+                <pre><code>public class ProductServiceTests
+{
+    private readonly Mock&lt;IProductRepository&gt; _mockRepository;
+    private readonly Mock&lt;ILogger&lt;ProductService&gt;&gt; _mockLogger;
+    private readonly ProductService _service;
+
+    public ProductServiceTests()
+    {
+        _mockRepository = new Mock&lt;IProductRepository&gt;();
+        _mockLogger = new Mock&lt;ILogger&lt;ProductService&gt;&gt;();
+        _service = new ProductService(_mockRepository.Object, _mockLogger.Object);
+    }
+
+    [Fact]
+    public async Task GetProductByIdAsync_ExistingProduct_ReturnsProductDto()
+    {
+        // Arrange
+        var productId = 1;
+        var product = new Product
+        {
+            Id = productId,
+            Name = "Test Product",
+            Price = 99.99m
+        };
+
+        _mockRepository
+            .Setup(r => r.GetByIdAsync(productId))
+            .ReturnsAsync(product);
+
+        // Act
+        var result = await _service.GetProductByIdAsync(productId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(productId, result.Id);
+        Assert.Equal("Test Product", result.Name);
+        Assert.Equal(99.99m, result.Price);
+
+        _mockRepository.Verify(r => r.GetByIdAsync(productId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProductByIdAsync_NonExistingProduct_ReturnsNull()
+    {
+        // Arrange
+        var productId = 999;
+        _mockRepository
+            .Setup(r => r.GetByIdAsync(productId))
+            .ReturnsAsync((Product)null);
+
+        // Act
+        var result = await _service.GetProductByIdAsync(productId);
+
+        // Assert
+        Assert.Null(result);
+        
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny&lt;EventId&gt;(),
+                It.Is&lt;It.IsAnyType&gt;((v, t) => v.ToString().Contains("not found")),
+                It.IsAny&lt;Exception&gt;(),
+                It.IsAny&lt;Func&lt;It.IsAnyType, Exception, string&gt;&gt;()),
+            Times.Once);
+    }
+}</code></pre>
+
+                <h2>Testing Controllers</h2>
+                <p>Test controllers by mocking their dependencies:</p>
+                <pre><code>public class ProductsControllerTests
+{
+    private readonly Mock&lt;IProductService&gt; _mockService;
+    private readonly ProductsController _controller;
+
+    public ProductsControllerTests()
+    {
+        _mockService = new Mock&lt;IProductService&gt;();
+        _controller = new ProductsController(_mockService.Object);
+    }
+
+    [Fact]
+    public async Task GetProduct_ExistingId_ReturnsOkWithProduct()
+    {
+        // Arrange
+        var productId = 1;
+        var productDto = new ProductDto
+        {
+            Id = productId,
+            Name = "Test Product",
+            Price = 99.99m
+        };
+
+        _mockService
+            .Setup(s => s.GetProductByIdAsync(productId))
+            .ReturnsAsync(productDto);
+
+        // Act
+        var result = await _controller.GetProduct(productId);
+
+        // Assert
+        var okResult = Assert.IsType&lt;OkObjectResult&gt;(result.Result);
+        var returnedProduct = Assert.IsType&lt;ProductDto&gt;(okResult.Value);
+        Assert.Equal(productId, returnedProduct.Id);
+    }
+
+    [Fact]
+    public async Task GetProduct_NonExistingId_ReturnsNotFound()
+    {
+        // Arrange
+        var productId = 999;
+        _mockService
+            .Setup(s => s.GetProductByIdAsync(productId))
+            .ReturnsAsync((ProductDto)null);
+
+        // Act
+        var result = await _controller.GetProduct(productId);
+
+        // Assert
+        Assert.IsType&lt;NotFoundResult&gt;(result.Result);
+    }
+
+    [Fact]
+    public async Task CreateProduct_ValidProduct_ReturnsCreatedAtAction()
+    {
+        // Arrange
+        var createDto = new CreateProductDto
+        {
+            Name = "New Product",
+            Price = 49.99m
+        };
+
+        var createdProduct = new ProductDto
+        {
+            Id = 1,
+            Name = createDto.Name,
+            Price = createDto.Price
+        };
+
+        _mockService
+            .Setup(s => s.CreateProductAsync(createDto))
+            .ReturnsAsync(createdProduct);
+
+        // Act
+        var result = await _controller.CreateProduct(createDto);
+
+        // Assert
+        var createdResult = Assert.IsType&lt;CreatedAtActionResult&gt;(result.Result);
+        Assert.Equal(nameof(_controller.GetProduct), createdResult.ActionName);
+        Assert.Equal(createdProduct.Id, ((ProductDto)createdResult.Value).Id);
+    }
+}</code></pre>
+
+                <h2>Using FluentAssertions</h2>
+                <p>FluentAssertions provides more readable assertions:</p>
+                <pre><code>using FluentAssertions;
+
+[Fact]
+public async Task GetProducts_ReturnsAllProducts()
+{
+    // Arrange
+    var products = new List&lt;ProductDto&gt;
+    {
+        new() { Id = 1, Name = "Product 1", Price = 10.00m },
+        new() { Id = 2, Name = "Product 2", Price = 20.00m }
+    };
+
+    _mockService
+        .Setup(s => s.GetProductsAsync())
+        .ReturnsAsync(products);
+
+    // Act
+    var result = await _controller.GetProducts();
+
+    // Assert
+    result.Result.Should().BeOfType&lt;OkObjectResult&gt;();
+    
+    var okResult = result.Result as OkObjectResult;
+    var returnedProducts = okResult.Value as List&lt;ProductDto&gt;();
+    
+    returnedProducts.Should().NotBeNull();
+    returnedProducts.Should().HaveCount(2);
+    returnedProducts.Should().Contain(p => p.Name == "Product 1");
+    returnedProducts.First().Price.Should().Be(10.00m);
+}</code></pre>
+
+                <h2>Integration Testing</h2>
+                <p>Test the entire application stack with WebApplicationFactory:</p>
+                <pre><code>public class ProductsIntegrationTests : IClassFixture&lt;WebApplicationFactory&lt;Program&gt;&gt;
+{
+    private readonly HttpClient _client;
+
+    public ProductsIntegrationTests(WebApplicationFactory&lt;Program&gt; factory)
+    {
+        _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task GetProducts_ReturnsSuccessStatusCode()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/products");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        response.Content.Headers.ContentType.ToString()
+            .Should().Contain("application/json");
+    }
+
+    [Fact]
+    public async Task CreateProduct_ValidData_ReturnsCreated()
+    {
+        // Arrange
+        var newProduct = new CreateProductDto
+        {
+            Name = "Integration Test Product",
+            Price = 99.99m
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(newProduct),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/products", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.Should().NotBeNull();
+    }
+}</code></pre>
+
+                <h2>Testing with In-Memory Database</h2>
+                <p>Use an in-memory database for repository tests:</p>
+                <pre><code>public class ProductRepositoryTests : IDisposable
+{
+    private readonly ApplicationDbContext _context;
+    private readonly ProductRepository _repository;
+
+    public ProductRepositoryTests()
+    {
+        var options = new DbContextOptionsBuilder&lt;ApplicationDbContext&gt;()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        _context = new ApplicationDbContext(options);
+        _repository = new ProductRepository(_context);
+
+        // Seed data
+        _context.Products.AddRange(
+            new Product { Id = 1, Name = "Product 1", Price = 10.00m },
+            new Product { Id = 2, Name = "Product 2", Price = 20.00m }
+        );
+        _context.SaveChanges();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ExistingId_ReturnsProduct()
+    {
+        // Act
+        var result = await _repository.GetByIdAsync(1);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Name.Should().Be("Product 1");
+    }
+
+    [Fact]
+    public async Task AddAsync_NewProduct_AddsToDatabase()
+    {
+        // Arrange
+        var newProduct = new Product
+        {
+            Name = "New Product",
+            Price = 30.00m
+        };
+
+        // Act
+        await _repository.AddAsync(newProduct);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var products = await _context.Products.ToListAsync();
+        products.Should().HaveCount(3);
+        products.Should().Contain(p => p.Name == "New Product");
+    }
+
+    public void Dispose()
+    {
+        _context.Dispose();
+    }
+}</code></pre>
+
+                <h2>Test Organization Best Practices</h2>
+                <ul>
+                    <li><strong>One test class per production class</strong> for clarity</li>
+                    <li><strong>Use descriptive test names</strong> that explain the scenario</li>
+                    <li><strong>Follow AAA pattern</strong> (Arrange, Act, Assert)</li>
+                    <li><strong>Test one thing per test</strong> for focused failures</li>
+                    <li><strong>Use test fixtures</strong> for shared setup code</li>
+                    <li><strong>Keep tests independent</strong> - no test should depend on another</li>
+                </ul>
+
+                <h2>Code Coverage</h2>
+                <p>Measure code coverage to identify untested code:</p>
+                <pre><code>dotnet add package coverlet.collector
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+
+// Generate HTML report
+dotnet tool install -g dotnet-reportgenerator-globaltool
+reportgenerator -reports:coverage.opencover.xml -targetdir:coveragereport</code></pre>
+
+                <h2>Common Testing Patterns</h2>
+
+                <h3>Testing Async Methods</h3>
+                <pre><code>[Fact]
+public async Task AsyncMethod_ShouldCompleteSuccessfully()
+{
+    // Arrange
+    var service = new MyService();
+    
+    // Act
+    var result = await service.ProcessAsync();
+    
+    // Assert
+    result.Should().NotBeNull();
+}</code></pre>
+
+                <h3>Testing Exceptions</h3>
+                <pre><code>[Fact]
+public async Task CreateProduct_InvalidData_ThrowsValidationException()
+{
+    // Arrange
+    var invalidProduct = new CreateProductDto { Name = null };
+    
+    // Act & Assert
+    await Assert.ThrowsAsync&lt;ValidationException&gt;(
+        () => _service.CreateProductAsync(invalidProduct));
+}</code></pre>
+
+                <h2>Conclusion</h2>
+                <p>Unit testing with xUnit is essential for building reliable ASP.NET Core applications. By combining
+                    unit tests, integration tests, and proper mocking strategies, you create a comprehensive test suite
+                    that gives you confidence in your code and enables fearless refactoring.</p>
+
+                <p>Remember: tests are an investment in your codebase's future. They may take time to write, but they
+                    save countless hours of debugging and prevent regressions as your application evolves.</p>
+            </section>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">xUnit</span>
+                    <span class="tag">Unit Testing</span>
+                    <span class="tag">ASP.NET Core</span>
+                    <span class="tag">Moq</span>
+                </div>
+                <a href="../index.html" class="back-link">← Back to all posts</a>
+            </footer>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 BackendCraft. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="../about.html">About</a>
+                <a href="../privacy.html">Privacy</a>
+                <a href="../contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

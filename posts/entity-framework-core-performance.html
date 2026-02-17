@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Explore advanced Entity Framework Core patterns including query optimization, change tracking strategies, and implementing the repository pattern effectively in ASP.NET Core applications.">
+    <meta name="keywords"
+        content="Entity Framework Core, EF Core, ORM, ASP.NET Core, database, performance optimization">
+    <meta name="author" content="Rajkumar Bhatt">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Entity Framework Core: Advanced Patterns and Performance">
+    <meta property="og:description"
+        content="Explore advanced Entity Framework Core patterns and performance optimization techniques.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://backendcraftdev.github.io/posts/entity-framework-core-performance.html">
+    <meta property="og:image" content="https://backendcraftdev.github.io/og-image.jpg">
+    <meta property="article:published_time" content="2026-02-10T10:00:00+00:00">
+    <meta property="article:author" content="Rajkumar Bhatt">
+    <meta property="article:section" content="ORM">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Entity Framework Core: Advanced Patterns and Performance">
+    <meta name="twitter:description"
+        content="Explore advanced Entity Framework Core patterns and performance optimization techniques.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="canonical" href="https://backendcraftdev.github.io/posts/entity-framework-core-performance.html">
+    <title>Entity Framework Core: Advanced Patterns and Performance - BackendCraft</title>
+    <link rel="stylesheet" href="../styles.css">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Entity Framework Core: Advanced Patterns and Performance",
+        "description": "Explore advanced Entity Framework Core patterns including query optimization, change tracking strategies, and implementing the repository pattern effectively.",
+        "image": "https://backendcraftdev.github.io/og-image.jpg",
+        "datePublished": "2026-02-10T10:00:00+00:00",
+        "dateModified": "2026-02-10T10:00:00+00:00",
+        "author": {
+            "@type": "Person",
+            "name": "Rajkumar Bhatt"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "BackendCraft",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://backendcraftdev.github.io/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://backendcraftdev.github.io/posts/entity-framework-core-performance.html"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="../index.html">Backend<span class="accent">Craft</span></a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <article class="post-content">
+            <header class="post-header">
+                <div class="post-meta">
+                    <time datetime="2026-02-10">February 10, 2026</time>
+                    <span class="post-category">ORM</span>
+                </div>
+                <h1>Entity Framework Core: Advanced Patterns and Performance</h1>
+                <p class="post-intro">Explore advanced Entity Framework Core patterns including query optimization,
+                    change tracking strategies, and implementing the repository pattern effectively in ASP.NET Core
+                    applications.</p>
+            </header>
+
+            <section class="post-body">
+                <h2>Introduction to Advanced EF Core</h2>
+                <p>Entity Framework Core is a powerful ORM that simplifies database operations in .NET applications.
+                    However, to build high-performance applications, you need to understand its advanced features and
+                    optimization techniques. This guide covers essential patterns and best practices for
+                    production-grade applications.</p>
+
+                <h2>Query Optimization Techniques</h2>
+                <p>Efficient querying is crucial for application performance. Let's explore key optimization strategies:
+                </p>
+
+                <h3>1. AsNoTracking for Read-Only Queries</h3>
+                <p>When you don't need to update entities, use <code>AsNoTracking()</code> to improve performance:</p>
+                <pre><code>var products = await context.Products
+    .AsNoTracking()
+    .Where(p => p.IsActive)
+    .ToListAsync();</code></pre>
+                <p>This prevents EF Core from tracking changes, reducing memory overhead by up to 30%.</p>
+
+                <h3>2. Projection with Select</h3>
+                <p>Only retrieve the data you need using projections:</p>
+                <pre><code>var productDtos = await context.Products
+    .Select(p => new ProductDto
+    {
+        Id = p.Id,
+        Name = p.Name,
+        Price = p.Price
+    })
+    .ToListAsync();</code></pre>
+                <p>This generates optimized SQL that only selects required columns, significantly reducing data
+                    transfer.</p>
+
+                <h3>3. Eager Loading vs Lazy Loading</h3>
+                <p>Use <code>Include()</code> for eager loading to avoid N+1 query problems:</p>
+                <pre><code>var orders = await context.Orders
+    .Include(o => o.Customer)
+    .Include(o => o.OrderItems)
+        .ThenInclude(oi => oi.Product)
+    .ToListAsync();</code></pre>
+
+                <h2>Change Tracking Strategies</h2>
+                <p>Understanding change tracking is essential for optimizing updates and inserts.</p>
+
+                <h3>Change Tracker Behavior</h3>
+                <p>EF Core tracks entity states: Added, Modified, Deleted, Unchanged, and Detached. You can control this
+                    behavior:</p>
+                <pre><code>// Disable tracking globally for a context
+context.ChangeTracker.QueryTrackingBehavior = 
+    QueryTrackingBehavior.NoTracking;
+
+// Check tracked entities
+var trackedEntities = context.ChangeTracker.Entries()
+    .Where(e => e.State != EntityState.Unchanged)
+    .ToList();</code></pre>
+
+                <h3>Optimizing Bulk Operations</h3>
+                <p>For bulk updates, consider using raw SQL or third-party libraries:</p>
+                <pre><code>// Efficient bulk update
+await context.Database.ExecuteSqlRawAsync(
+    "UPDATE Products SET IsActive = 0 WHERE CategoryId = {0}", 
+    categoryId);</code></pre>
+
+                <h2>Repository Pattern Implementation</h2>
+                <p>The repository pattern abstracts data access logic. Here's an effective implementation:</p>
+
+                <h3>Generic Repository Interface</h3>
+                <pre><code>public interface IRepository&lt;T&gt; where T : class
+{
+    Task&lt;T&gt; GetByIdAsync(int id);
+    Task&lt;IEnumerable&lt;T&gt;&gt; GetAllAsync();
+    Task&lt;IEnumerable&lt;T&gt;&gt; FindAsync(Expression&lt;Func&lt;T, bool&gt;&gt; predicate);
+    Task AddAsync(T entity);
+    Task UpdateAsync(T entity);
+    Task DeleteAsync(T entity);
+}</code></pre>
+
+                <h3>Repository Implementation</h3>
+                <pre><code>public class Repository&lt;T&gt; : IRepository&lt;T&gt; where T : class
+{
+    private readonly DbContext _context;
+    private readonly DbSet&lt;T&gt; _dbSet;
+
+    public Repository(DbContext context)
+    {
+        _context = context;
+        _dbSet = context.Set&lt;T&gt;();
+    }
+
+    public async Task&lt;T&gt; GetByIdAsync(int id)
+    {
+        return await _dbSet.FindAsync(id);
+    }
+
+    public async Task&lt;IEnumerable&lt;T&gt;&gt; GetAllAsync()
+    {
+        return await _dbSet.AsNoTracking().ToListAsync();
+    }
+
+    public async Task&lt;IEnumerable&lt;T&gt;&gt; FindAsync(
+        Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+    {
+        return await _dbSet.Where(predicate).ToListAsync();
+    }
+
+    public async Task AddAsync(T entity)
+    {
+        await _dbSet.AddAsync(entity);
+    }
+
+    public async Task UpdateAsync(T entity)
+    {
+        _dbSet.Update(entity);
+    }
+
+    public async Task DeleteAsync(T entity)
+    {
+        _dbSet.Remove(entity);
+    }
+}</code></pre>
+
+                <h2>Unit of Work Pattern</h2>
+                <p>Combine repositories with the Unit of Work pattern for transaction management:</p>
+                <pre><code>public interface IUnitOfWork : IDisposable
+{
+    IRepository&lt;Product&gt; Products { get; }
+    IRepository&lt;Order&gt; Orders { get; }
+    Task&lt;int&gt; SaveChangesAsync();
+}
+
+public class UnitOfWork : IUnitOfWork
+{
+    private readonly ApplicationDbContext _context;
+
+    public UnitOfWork(ApplicationDbContext context)
+    {
+        _context = context;
+        Products = new Repository&lt;Product&gt;(context);
+        Orders = new Repository&lt;Order&gt;(context);
+    }
+
+    public IRepository&lt;Product&gt; Products { get; }
+    public IRepository&lt;Order&gt; Orders { get; }
+
+    public async Task&lt;int&gt; SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
+    }
+
+    public void Dispose()
+    {
+        _context.Dispose();
+    }
+}</code></pre>
+
+                <h2>Advanced Query Techniques</h2>
+
+                <h3>Compiled Queries</h3>
+                <p>For frequently executed queries, use compiled queries to improve performance:</p>
+                <pre><code>private static readonly Func&lt;ApplicationDbContext, int, Task&lt;Product&gt;&gt; 
+    GetProductById = EF.CompileAsyncQuery(
+        (ApplicationDbContext context, int id) =>
+            context.Products.FirstOrDefault(p => p.Id == id));</code></pre>
+
+                <h3>Split Queries</h3>
+                <p>For complex queries with multiple includes, use split queries to avoid cartesian explosion:</p>
+                <pre><code>var orders = await context.Orders
+    .Include(o => o.OrderItems)
+    .Include(o => o.Customer)
+    .AsSplitQuery()
+    .ToListAsync();</code></pre>
+
+                <h2>Performance Monitoring</h2>
+                <p>Always monitor your EF Core queries in production:</p>
+                <ul>
+                    <li><strong>Enable sensitive data logging</strong> in development to see parameter values</li>
+                    <li><strong>Use SQL Server Profiler</strong> or similar tools to analyze generated SQL</li>
+                    <li><strong>Implement query logging</strong> to identify slow queries</li>
+                    <li><strong>Monitor memory usage</strong> to detect tracking issues</li>
+                </ul>
+
+                <h2>Best Practices Summary</h2>
+                <ul>
+                    <li>Use <code>AsNoTracking()</code> for read-only operations</li>
+                    <li>Project only required data with <code>Select()</code></li>
+                    <li>Avoid N+1 queries with proper eager loading</li>
+                    <li>Use compiled queries for frequently executed operations</li>
+                    <li>Implement repository and unit of work patterns for maintainability</li>
+                    <li>Use split queries for complex includes</li>
+                    <li>Monitor and optimize query performance regularly</li>
+                    <li>Consider raw SQL for complex or bulk operations</li>
+                </ul>
+
+                <h2>Conclusion</h2>
+                <p>Mastering Entity Framework Core requires understanding both its capabilities and limitations. By
+                    applying these advanced patterns and optimization techniques, you can build high-performance,
+                    maintainable data access layers that scale with your application's needs.</p>
+
+                <p>In the next article, we'll explore implementing these patterns within a Clean Architecture structure,
+                    ensuring your data access layer remains decoupled and testable.</p>
+            </section>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">Entity Framework Core</span>
+                    <span class="tag">ORM</span>
+                    <span class="tag">Performance</span>
+                    <span class="tag">Repository Pattern</span>
+                </div>
+                <a href="../index.html" class="back-link">← Back to all posts</a>
+            </footer>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 BackendCraft. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="../about.html">About</a>
+                <a href="../privacy.html">Privacy</a>
+                <a href="../contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="A comprehensive guide to implementing Clean Architecture principles in ASP.NET Core, including project structure, dependency management, and separation of concerns for maintainable applications.">
+    <meta name="keywords"
+        content="Clean Architecture, ASP.NET Core, software architecture, dependency injection, SOLID principles">
+    <meta name="author" content="Rajkumar Bhatt">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Clean Architecture in ASP.NET Core Applications">
+    <meta property="og:description"
+        content="A comprehensive guide to implementing Clean Architecture principles in ASP.NET Core applications.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://backendcraftdev.github.io/posts/clean-architecture-aspnet-core.html">
+    <meta property="og:image" content="https://backendcraftdev.github.io/og-image.jpg">
+    <meta property="article:published_time" content="2026-02-05T10:00:00+00:00">
+    <meta property="article:author" content="Rajkumar Bhatt">
+    <meta property="article:section" content="Architecture">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clean Architecture in ASP.NET Core Applications">
+    <meta name="twitter:description"
+        content="A comprehensive guide to implementing Clean Architecture principles in ASP.NET Core.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="canonical" href="https://backendcraftdev.github.io/posts/clean-architecture-aspnet-core.html">
+    <title>Clean Architecture in ASP.NET Core Applications - BackendCraft</title>
+    <link rel="stylesheet" href="../styles.css">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Clean Architecture in ASP.NET Core Applications",
+        "description": "A comprehensive guide to implementing Clean Architecture principles in ASP.NET Core, including project structure, dependency management, and separation of concerns.",
+        "image": "https://backendcraftdev.github.io/og-image.jpg",
+        "datePublished": "2026-02-05T10:00:00+00:00",
+        "dateModified": "2026-02-05T10:00:00+00:00",
+        "author": {
+            "@type": "Person",
+            "name": "Rajkumar Bhatt"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "BackendCraft",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://backendcraftdev.github.io/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://backendcraftdev.github.io/posts/clean-architecture-aspnet-core.html"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="../index.html">Backend<span class="accent">Craft</span></a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <article class="post-content">
+            <header class="post-header">
+                <div class="post-meta">
+                    <time datetime="2026-02-05">February 5, 2026</time>
+                    <span class="post-category">Architecture</span>
+                </div>
+                <h1>Clean Architecture in ASP.NET Core Applications</h1>
+                <p class="post-intro">A comprehensive guide to implementing Clean Architecture principles in ASP.NET
+                    Core, including project structure, dependency management, and separation of concerns for building
+                    maintainable, testable applications.</p>
+            </header>
+
+            <section class="post-body">
+                <h2>What is Clean Architecture?</h2>
+                <p>Clean Architecture, popularized by Robert C. Martin (Uncle Bob), is an architectural pattern that
+                    emphasizes separation of concerns and independence of frameworks, UI, databases, and external
+                    agencies. The core principle is that business logic should be independent of implementation details.
+                </p>
+
+                <h2>Core Principles</h2>
+                <p>Clean Architecture is built on several fundamental principles:</p>
+                <ul>
+                    <li><strong>Dependency Rule:</strong> Dependencies point inward toward the domain</li>
+                    <li><strong>Independence:</strong> Business logic is independent of frameworks and UI</li>
+                    <li><strong>Testability:</strong> Business rules can be tested without external dependencies</li>
+                    <li><strong>Framework Independence:</strong> The architecture doesn't depend on specific libraries
+                    </li>
+                </ul>
+
+                <h2>Project Structure</h2>
+                <p>A typical Clean Architecture solution in ASP.NET Core consists of four main layers:</p>
+
+                <h3>1. Domain Layer (Core)</h3>
+                <p>The innermost layer containing enterprise business rules and entities:</p>
+                <pre><code>Domain/
+├── Entities/
+│   ├── Product.cs
+│   ├── Order.cs
+│   └── Customer.cs
+├── Enums/
+│   └── OrderStatus.cs
+├── Exceptions/
+│   └── DomainException.cs
+└── ValueObjects/
+    └── Money.cs</code></pre>
+
+                <p>Example entity:</p>
+                <pre><code>public class Order
+{
+    public int Id { get; private set; }
+    public DateTime OrderDate { get; private set; }
+    public OrderStatus Status { get; private set; }
+    private readonly List&lt;OrderItem&gt; _items = new();
+    public IReadOnlyCollection&lt;OrderItem&gt; Items => _items.AsReadOnly();
+
+    public void AddItem(Product product, int quantity)
+    {
+        if (quantity <= 0)
+            throw new DomainException("Quantity must be positive");
+        
+        _items.Add(new OrderItem(product, quantity));
+    }
+
+    public decimal GetTotal()
+    {
+        return _items.Sum(i => i.Price * i.Quantity);
+    }
+}</code></pre>
+
+                <h3>2. Application Layer</h3>
+                <p>Contains application business rules, use cases, and interfaces:</p>
+                <pre><code>Application/
+├── Interfaces/
+│   ├── IRepository.cs
+│   ├── IEmailService.cs
+│   └── IUnitOfWork.cs
+├── DTOs/
+│   ├── ProductDto.cs
+│   └── OrderDto.cs
+├── UseCases/
+│   ├── CreateOrder/
+│   │   ├── CreateOrderCommand.cs
+│   │   └── CreateOrderHandler.cs
+│   └── GetProducts/
+│       ├── GetProductsQuery.cs
+│       └── GetProductsHandler.cs
+└── Mappings/
+    └── MappingProfile.cs</code></pre>
+
+                <p>Example use case with CQRS:</p>
+                <pre><code>public class CreateOrderCommand : IRequest&lt;int&gt;
+{
+    public int CustomerId { get; set; }
+    public List&lt;OrderItemDto&gt; Items { get; set; }
+}
+
+public class CreateOrderHandler : IRequestHandler&lt;CreateOrderCommand, int&gt;
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
+
+    public CreateOrderHandler(IUnitOfWork unitOfWork, IEmailService emailService)
+    {
+        _unitOfWork = unitOfWork;
+        _emailService = emailService;
+    }
+
+    public async Task&lt;int&gt; Handle(CreateOrderCommand request, 
+        CancellationToken cancellationToken)
+    {
+        var order = new Order(request.CustomerId);
+        
+        foreach (var item in request.Items)
+        {
+            var product = await _unitOfWork.Products
+                .GetByIdAsync(item.ProductId);
+            order.AddItem(product, item.Quantity);
+        }
+
+        await _unitOfWork.Orders.AddAsync(order);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _emailService.SendOrderConfirmationAsync(order);
+
+        return order.Id;
+    }
+}</code></pre>
+
+                <h3>3. Infrastructure Layer</h3>
+                <p>Implements interfaces defined in the Application layer:</p>
+                <pre><code>Infrastructure/
+├── Persistence/
+│   ├── ApplicationDbContext.cs
+│   ├── Repositories/
+│   │   ├── ProductRepository.cs
+│   │   └── OrderRepository.cs
+│   └── Configurations/
+│       └── OrderConfiguration.cs
+├── Services/
+│   ├── EmailService.cs
+│   └── DateTimeService.cs
+└── Identity/
+    └── IdentityService.cs</code></pre>
+
+                <p>Example repository implementation:</p>
+                <pre><code>public class OrderRepository : Repository&lt;Order&gt;, IOrderRepository
+{
+    private readonly ApplicationDbContext _context;
+
+    public OrderRepository(ApplicationDbContext context) : base(context)
+    {
+        _context = context;
+    }
+
+    public async Task&lt;Order&gt; GetOrderWithItemsAsync(int orderId)
+    {
+        return await _context.Orders
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+    }
+
+    public async Task&lt;List&lt;Order&gt;&gt; GetCustomerOrdersAsync(int customerId)
+    {
+        return await _context.Orders
+            .Where(o => o.CustomerId == customerId)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+    }
+}</code></pre>
+
+                <h3>4. Presentation Layer (Web API)</h3>
+                <p>The outermost layer handling HTTP requests:</p>
+                <pre><code>WebAPI/
+├── Controllers/
+│   ├── OrdersController.cs
+│   └── ProductsController.cs
+├── Filters/
+│   └── ApiExceptionFilter.cs
+├── Middleware/
+│   └── ExceptionHandlingMiddleware.cs
+└── Program.cs</code></pre>
+
+                <p>Example controller:</p>
+                <pre><code>[ApiController]
+[Route("api/[controller]")]
+public class OrdersController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public OrdersController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpPost]
+    public async Task&lt;ActionResult&lt;int&gt;&gt; CreateOrder(
+        CreateOrderCommand command)
+    {
+        var orderId = await _mediator.Send(command);
+        return CreatedAtAction(nameof(GetOrder), 
+            new { id = orderId }, orderId);
+    }
+
+    [HttpGet("{id}")]
+    public async Task&lt;ActionResult&lt;OrderDto&gt;&gt; GetOrder(int id)
+    {
+        var query = new GetOrderQuery { OrderId = id };
+        var order = await _mediator.Send(query);
+        
+        if (order == null)
+            return NotFound();
+        
+        return Ok(order);
+    }
+}</code></pre>
+
+                <h2>Dependency Management</h2>
+                <p>Configure dependency injection in <code>Program.cs</code>:</p>
+                <pre><code>// Application layer services
+builder.Services.AddMediatR(cfg => 
+    cfg.RegisterServicesFromAssembly(typeof(CreateOrderHandler).Assembly));
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+// Infrastructure layer services
+builder.Services.AddDbContext&lt;ApplicationDbContext&gt;(options =>
+    options.UseSqlServer(builder.Configuration
+        .GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped&lt;IUnitOfWork, UnitOfWork&gt;();
+builder.Services.AddScoped&lt;IEmailService, EmailService&gt;();
+builder.Services.AddScoped&lt;IOrderRepository, OrderRepository&gt;();</code></pre>
+
+                <h2>Benefits of Clean Architecture</h2>
+                <ul>
+                    <li><strong>Testability:</strong> Business logic can be tested independently</li>
+                    <li><strong>Maintainability:</strong> Clear separation makes changes easier</li>
+                    <li><strong>Flexibility:</strong> Easy to swap implementations (e.g., change databases)</li>
+                    <li><strong>Scalability:</strong> Well-organized code scales better</li>
+                    <li><strong>Team Collaboration:</strong> Clear boundaries enable parallel development</li>
+                </ul>
+
+                <h2>Common Pitfalls to Avoid</h2>
+                <ul>
+                    <li><strong>Anemic Domain Model:</strong> Don't make entities just data containers</li>
+                    <li><strong>Over-engineering:</strong> Start simple, add complexity when needed</li>
+                    <li><strong>Leaky Abstractions:</strong> Don't let infrastructure concerns leak into domain</li>
+                    <li><strong>Too Many Layers:</strong> Don't add layers without clear purpose</li>
+                </ul>
+
+                <h2>Testing Strategy</h2>
+                <p>Clean Architecture makes testing straightforward:</p>
+                <pre><code>public class CreateOrderHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidOrder_CreatesOrderAndSendsEmail()
+    {
+        // Arrange
+        var mockUnitOfWork = new Mock&lt;IUnitOfWork&gt;();
+        var mockEmailService = new Mock&lt;IEmailService&gt;();
+        var handler = new CreateOrderHandler(
+            mockUnitOfWork.Object, 
+            mockEmailService.Object);
+        
+        var command = new CreateOrderCommand
+        {
+            CustomerId = 1,
+            Items = new List&lt;OrderItemDto&gt;
+            {
+                new() { ProductId = 1, Quantity = 2 }
+            }
+        };
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result > 0);
+        mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+        mockEmailService.Verify(e => 
+            e.SendOrderConfirmationAsync(It.IsAny&lt;Order&gt;()), Times.Once);
+    }
+}</code></pre>
+
+                <h2>Conclusion</h2>
+                <p>Clean Architecture provides a solid foundation for building maintainable ASP.NET Core applications.
+                    By following the dependency rule and keeping business logic independent of frameworks and
+                    infrastructure, you create applications that are easier to test, maintain, and evolve over time.</p>
+
+                <p>While it may seem like more work upfront, the long-term benefits of Clean Architecture become
+                    apparent as your application grows and requirements change. Start with the core principles, and
+                    adapt the structure to fit your specific needs.</p>
+            </section>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">Clean Architecture</span>
+                    <span class="tag">ASP.NET Core</span>
+                    <span class="tag">Software Design</span>
+                    <span class="tag">SOLID</span>
+                </div>
+                <a href="../index.html" class="back-link">← Back to all posts</a>
+            </footer>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 BackendCraft. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="../about.html">About</a>
+                <a href="../privacy.html">Privacy</a>
+                <a href="../contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

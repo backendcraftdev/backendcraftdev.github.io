@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Discover how to implement the Command Query Responsibility Segregation pattern using MediatR to create maintainable and testable ASP.NET Core applications with clear separation of concerns.">
+    <meta name="keywords" content="CQRS, MediatR, ASP.NET Core, design patterns, command query separation">
+    <meta name="author" content="Rajkumar Bhatt">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="CQRS Pattern with MediatR in ASP.NET Core">
+    <meta property="og:description"
+        content="Discover how to implement the CQRS pattern using MediatR in ASP.NET Core applications.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://backendcraftdev.github.io/posts/cqrs-pattern-mediatr-aspnet-core.html">
+    <meta property="og:image" content="https://backendcraftdev.github.io/og-image.jpg">
+    <meta property="article:published_time" content="2026-01-28T10:00:00+00:00">
+    <meta property="article:author" content="Rajkumar Bhatt">
+    <meta property="article:section" content="Best Practices">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CQRS Pattern with MediatR in ASP.NET Core">
+    <meta name="twitter:description"
+        content="Discover how to implement the CQRS pattern using MediatR in ASP.NET Core.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="canonical" href="https://backendcraftdev.github.io/posts/cqrs-pattern-mediatr-aspnet-core.html">
+    <title>CQRS Pattern with MediatR in ASP.NET Core - BackendCraft</title>
+    <link rel="stylesheet" href="../styles.css">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "CQRS Pattern with MediatR in ASP.NET Core",
+        "description": "Discover how to implement the Command Query Responsibility Segregation pattern using MediatR to create maintainable and testable ASP.NET Core applications.",
+        "image": "https://backendcraftdev.github.io/og-image.jpg",
+        "datePublished": "2026-01-28T10:00:00+00:00",
+        "dateModified": "2026-01-28T10:00:00+00:00",
+        "author": {
+            "@type": "Person",
+            "name": "Rajkumar Bhatt"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "BackendCraft",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://backendcraftdev.github.io/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://backendcraftdev.github.io/posts/cqrs-pattern-mediatr-aspnet-core.html"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="../index.html">Backend<span class="accent">Craft</span></a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <article class="post-content">
+            <header class="post-header">
+                <div class="post-meta">
+                    <time datetime="2026-01-28">January 28, 2026</time>
+                    <span class="post-category">Best Practices</span>
+                </div>
+                <h1>CQRS Pattern with MediatR in ASP.NET Core</h1>
+                <p class="post-intro">Discover how to implement the Command Query Responsibility Segregation pattern
+                    using MediatR to create maintainable and testable ASP.NET Core applications with clear separation of
+                    concerns.</p>
+            </header>
+
+            <section class="post-body">
+                <h2>Understanding CQRS</h2>
+                <p>Command Query Responsibility Segregation (CQRS) is a pattern that separates read and write operations
+                    into different models. This separation allows you to optimize each operation independently and scale
+                    them differently based on your application's needs.</p>
+
+                <h3>Core Concepts</h3>
+                <ul>
+                    <li><strong>Commands:</strong> Operations that change state (Create, Update, Delete)</li>
+                    <li><strong>Queries:</strong> Operations that read data without side effects</li>
+                    <li><strong>Handlers:</strong> Classes that process commands and queries</li>
+                    <li><strong>Mediator:</strong> Coordinates between requests and handlers</li>
+                </ul>
+
+                <h2>Why Use MediatR?</h2>
+                <p>MediatR is a simple mediator implementation in .NET that provides several benefits:</p>
+                <ul>
+                    <li>Decouples controllers from business logic</li>
+                    <li>Implements the mediator pattern elegantly</li>
+                    <li>Supports pipeline behaviors for cross-cutting concerns</li>
+                    <li>Makes code more testable and maintainable</li>
+                    <li>Reduces controller complexity</li>
+                </ul>
+
+                <h2>Setting Up MediatR</h2>
+                <p>First, install the required NuGet packages:</p>
+                <pre><code>dotnet add package MediatR
+dotnet add package MediatR.Extensions.Microsoft.DependencyInjection</code></pre>
+
+                <p>Register MediatR in <code>Program.cs</code>:</p>
+                <pre><code>builder.Services.AddMediatR(cfg => 
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));</code></pre>
+
+                <h2>Implementing Commands</h2>
+                <p>Commands represent operations that modify state. Let's create a command to create a new product:</p>
+
+                <h3>Command Definition</h3>
+                <pre><code>public class CreateProductCommand : IRequest&lt;int&gt;
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public decimal Price { get; set; }
+    public int CategoryId { get; set; }
+}</code></pre>
+
+                <h3>Command Handler</h3>
+                <pre><code>public class CreateProductCommandHandler 
+    : IRequestHandler&lt;CreateProductCommand, int&gt;
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger&lt;CreateProductCommandHandler&gt; _logger;
+
+    public CreateProductCommandHandler(
+        IApplicationDbContext context,
+        ILogger&lt;CreateProductCommandHandler&gt; logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+
+    public async Task&lt;int&gt; Handle(
+        CreateProductCommand request, 
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Creating product: {ProductName}", request.Name);
+
+        var product = new Product
+        {
+            Name = request.Name,
+            Description = request.Description,
+            Price = request.Price,
+            CategoryId = request.CategoryId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Product created with ID: {ProductId}", product.Id);
+
+        return product.Id;
+    }
+}</code></pre>
+
+                <h2>Implementing Queries</h2>
+                <p>Queries retrieve data without modifying state. Here's a query to get product details:</p>
+
+                <h3>Query Definition</h3>
+                <pre><code>public class GetProductByIdQuery : IRequest&lt;ProductDto&gt;
+{
+    public int ProductId { get; set; }
+}
+
+public class ProductDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public decimal Price { get; set; }
+    public string CategoryName { get; set; }
+}</code></pre>
+
+                <h3>Query Handler</h3>
+                <pre><code>public class GetProductByIdQueryHandler 
+    : IRequestHandler&lt;GetProductByIdQuery, ProductDto&gt;
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetProductByIdQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task&lt;ProductDto&gt; Handle(
+        GetProductByIdQuery request, 
+        CancellationToken cancellationToken)
+    {
+        var product = await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Where(p => p.Id == request.ProductId)
+            .Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                CategoryName = p.Category.Name
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return product;
+    }
+}</code></pre>
+
+                <h2>Using CQRS in Controllers</h2>
+                <p>Controllers become thin orchestrators that delegate to MediatR:</p>
+                <pre><code>[ApiController]
+[Route("api/[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public ProductsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpPost]
+    public async Task&lt;ActionResult&lt;int&gt;&gt; CreateProduct(
+        CreateProductCommand command)
+    {
+        var productId = await _mediator.Send(command);
+        return CreatedAtAction(
+            nameof(GetProduct), 
+            new { id = productId }, 
+            productId);
+    }
+
+    [HttpGet("{id}")]
+    public async Task&lt;ActionResult&lt;ProductDto&gt;&gt; GetProduct(int id)
+    {
+        var query = new GetProductByIdQuery { ProductId = id };
+        var product = await _mediator.Send(query);
+
+        if (product == null)
+            return NotFound();
+
+        return Ok(product);
+    }
+
+    [HttpPut("{id}")]
+    public async Task&lt;ActionResult&gt; UpdateProduct(
+        int id, 
+        UpdateProductCommand command)
+    {
+        if (id != command.ProductId)
+            return BadRequest();
+
+        await _mediator.Send(command);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task&lt;ActionResult&gt; DeleteProduct(int id)
+    {
+        var command = new DeleteProductCommand { ProductId = id };
+        await _mediator.Send(command);
+        return NoContent();
+    }
+}</code></pre>
+
+                <h2>Pipeline Behaviors</h2>
+                <p>One of MediatR's most powerful features is pipeline behaviors, which allow you to add cross-cutting
+                    concerns:</p>
+
+                <h3>Validation Behavior</h3>
+                <pre><code>public class ValidationBehavior&lt;TRequest, TResponse&gt; 
+    : IPipelineBehavior&lt;TRequest, TResponse&gt;
+    where TRequest : IRequest&lt;TResponse&gt;
+{
+    private readonly IEnumerable&lt;IValidator&lt;TRequest&gt;&gt; _validators;
+
+    public ValidationBehavior(IEnumerable&lt;IValidator&lt;TRequest&gt;&gt; validators)
+    {
+        _validators = validators;
+    }
+
+    public async Task&lt;TResponse&gt; Handle(
+        TRequest request,
+        RequestHandlerDelegate&lt;TResponse&gt; next,
+        CancellationToken cancellationToken)
+    {
+        if (_validators.Any())
+        {
+            var context = new ValidationContext&lt;TRequest&gt;(request);
+            
+            var validationResults = await Task.WhenAll(
+                _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+            
+            var failures = validationResults
+                .SelectMany(r => r.Errors)
+                .Where(f => f != null)
+                .ToList();
+
+            if (failures.Any())
+                throw new ValidationException(failures);
+        }
+
+        return await next();
+    }
+}</code></pre>
+
+                <h3>Logging Behavior</h3>
+                <pre><code>public class LoggingBehavior&lt;TRequest, TResponse&gt; 
+    : IPipelineBehavior&lt;TRequest, TResponse&gt;
+    where TRequest : IRequest&lt;TResponse&gt;
+{
+    private readonly ILogger&lt;LoggingBehavior&lt;TRequest, TResponse&gt;&gt; _logger;
+
+    public LoggingBehavior(
+        ILogger&lt;LoggingBehavior&lt;TRequest, TResponse&gt;&gt; logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task&lt;TResponse&gt; Handle(
+        TRequest request,
+        RequestHandlerDelegate&lt;TResponse&gt; next,
+        CancellationToken cancellationToken)
+    {
+        var requestName = typeof(TRequest).Name;
+        
+        _logger.LogInformation("Handling {RequestName}", requestName);
+        
+        var stopwatch = Stopwatch.StartNew();
+        
+        try
+        {
+            var response = await next();
+            
+            stopwatch.Stop();
+            _logger.LogInformation(
+                "Handled {RequestName} in {ElapsedMilliseconds}ms",
+                requestName,
+                stopwatch.ElapsedMilliseconds);
+            
+            return response;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, 
+                "Error handling {RequestName} after {ElapsedMilliseconds}ms",
+                requestName,
+                stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+    }
+}</code></pre>
+
+                <h3>Registering Behaviors</h3>
+                <pre><code>builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.AddBehavior(typeof(IPipelineBehavior&lt;,&gt;), 
+        typeof(ValidationBehavior&lt;,&gt;));
+    cfg.AddBehavior(typeof(IPipelineBehavior&lt;,&gt;), 
+        typeof(LoggingBehavior&lt;,&gt;));
+});</code></pre>
+
+                <h2>Advanced Patterns</h2>
+
+                <h3>Notifications (Events)</h3>
+                <p>MediatR also supports notifications for implementing domain events:</p>
+                <pre><code>public class ProductCreatedNotification : INotification
+{
+    public int ProductId { get; set; }
+    public string ProductName { get; set; }
+}
+
+public class SendEmailHandler 
+    : INotificationHandler&lt;ProductCreatedNotification&gt;
+{
+    private readonly IEmailService _emailService;
+
+    public SendEmailHandler(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    public async Task Handle(
+        ProductCreatedNotification notification,
+        CancellationToken cancellationToken)
+    {
+        await _emailService.SendProductCreatedEmailAsync(
+            notification.ProductId,
+            notification.ProductName);
+    }
+}
+
+// Publish the notification
+await _mediator.Publish(new ProductCreatedNotification
+{
+    ProductId = product.Id,
+    ProductName = product.Name
+});</code></pre>
+
+                <h2>Testing CQRS Handlers</h2>
+                <p>Handlers are easy to unit test in isolation:</p>
+                <pre><code>public class CreateProductCommandHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidCommand_CreatesProduct()
+    {
+        // Arrange
+        var mockContext = new Mock&lt;IApplicationDbContext&gt;();
+        var mockLogger = new Mock&lt;ILogger&lt;CreateProductCommandHandler&gt;&gt;();
+        var handler = new CreateProductCommandHandler(
+            mockContext.Object, 
+            mockLogger.Object);
+
+        var command = new CreateProductCommand
+        {
+            Name = "Test Product",
+            Description = "Test Description",
+            Price = 99.99m,
+            CategoryId = 1
+        };
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result > 0);
+        mockContext.Verify(c => c.SaveChangesAsync(It.IsAny&lt;CancellationToken&gt;()), 
+            Times.Once);
+    }
+}</code></pre>
+
+                <h2>Best Practices</h2>
+                <ul>
+                    <li>Keep commands and queries simple and focused</li>
+                    <li>Use DTOs for query results to avoid exposing entities</li>
+                    <li>Implement validation using FluentValidation and pipeline behaviors</li>
+                    <li>Use <code>AsNoTracking()</code> for queries to improve performance</li>
+                    <li>Keep handlers thin - delegate complex logic to domain services</li>
+                    <li>Use notifications for cross-cutting concerns and domain events</li>
+                    <li>Organize commands and queries by feature folders</li>
+                </ul>
+
+                <h2>Conclusion</h2>
+                <p>CQRS with MediatR provides a clean, maintainable architecture for ASP.NET Core applications. By
+                    separating commands and queries, you gain better testability, clearer code organization, and the
+                    ability to optimize read and write operations independently.</p>
+
+                <p>Combined with Clean Architecture and other patterns like repository and unit of work, CQRS helps you
+                    build robust, scalable applications that are easy to maintain and extend over time.</p>
+            </section>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">CQRS</span>
+                    <span class="tag">MediatR</span>
+                    <span class="tag">ASP.NET Core</span>
+                    <span class="tag">Design Patterns</span>
+                </div>
+                <a href="../index.html" class="back-link">← Back to all posts</a>
+            </footer>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 BackendCraft. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="../about.html">About</a>
+                <a href="../privacy.html">Privacy</a>
+                <a href="../contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

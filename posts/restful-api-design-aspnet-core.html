@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Master the art of designing and building RESTful APIs with ASP.NET Core, including versioning strategies, error handling, and API documentation with Swagger for production-ready web services.">
+    <meta name="keywords" content="RESTful API, ASP.NET Core, Web API, REST, API design, Swagger, OpenAPI">
+    <meta name="author" content="Rajkumar Bhatt">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Building RESTful APIs with ASP.NET Core Web API">
+    <meta property="og:description"
+        content="Master the art of designing and building RESTful APIs with ASP.NET Core Web API.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://backendcraftdev.github.io/posts/restful-api-design-aspnet-core.html">
+    <meta property="og:image" content="https://backendcraftdev.github.io/og-image.jpg">
+    <meta property="article:published_time" content="2026-01-20T10:00:00+00:00">
+    <meta property="article:author" content="Rajkumar Bhatt">
+    <meta property="article:section" content="API Design">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Building RESTful APIs with ASP.NET Core Web API">
+    <meta name="twitter:description" content="Master the art of designing and building RESTful APIs with ASP.NET Core.">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="canonical" href="https://backendcraftdev.github.io/posts/restful-api-design-aspnet-core.html">
+    <title>Building RESTful APIs with ASP.NET Core Web API - BackendCraft</title>
+    <link rel="stylesheet" href="../styles.css">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Building RESTful APIs with ASP.NET Core Web API",
+        "description": "Master the art of designing and building RESTful APIs with ASP.NET Core, including versioning strategies, error handling, and API documentation with Swagger.",
+        "image": "https://backendcraftdev.github.io/og-image.jpg",
+        "datePublished": "2026-01-20T10:00:00+00:00",
+        "dateModified": "2026-01-20T10:00:00+00:00",
+        "author": {
+            "@type": "Person",
+            "name": "Rajkumar Bhatt"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "BackendCraft",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://backendcraftdev.github.io/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://backendcraftdev.github.io/posts/restful-api-design-aspnet-core.html"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="logo">
+                <a href="../index.html">Backend<span class="accent">Craft</span></a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <article class="post-content">
+            <header class="post-header">
+                <div class="post-meta">
+                    <time datetime="2026-01-20">January 20, 2026</time>
+                    <span class="post-category">API Design</span>
+                </div>
+                <h1>Building RESTful APIs with ASP.NET Core Web API</h1>
+                <p class="post-intro">Master the art of designing and building RESTful APIs with ASP.NET Core, including
+                    versioning strategies, error handling, and API documentation with Swagger for production-ready web
+                    services.</p>
+            </header>
+
+            <section class="post-body">
+                <h2>REST Principles and Best Practices</h2>
+                <p>REST (Representational State Transfer) is an architectural style for designing networked
+                    applications. Understanding its core principles is essential for building effective APIs.</p>
+
+                <h3>Core REST Principles</h3>
+                <ul>
+                    <li><strong>Stateless:</strong> Each request contains all necessary information</li>
+                    <li><strong>Client-Server:</strong> Separation of concerns between client and server</li>
+                    <li><strong>Cacheable:</strong> Responses should define cacheability</li>
+                    <li><strong>Uniform Interface:</strong> Consistent resource identification and manipulation</li>
+                    <li><strong>Layered System:</strong> Architecture can be composed of hierarchical layers</li>
+                </ul>
+
+                <h2>Setting Up ASP.NET Core Web API</h2>
+                <p>Create a new Web API project:</p>
+                <pre><code>dotnet new webapi -n MyApi
+cd MyApi
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+dotnet add package Swashbuckle.AspNetCore</code></pre>
+
+                <h2>Resource Naming Conventions</h2>
+                <p>Follow these conventions for consistent, intuitive API design:</p>
+                <pre><code>// Good - Use plural nouns for collections
+GET    /api/products
+POST   /api/products
+GET    /api/products/{id}
+PUT    /api/products/{id}
+DELETE /api/products/{id}
+
+// Good - Nested resources
+GET    /api/products/{id}/reviews
+POST   /api/products/{id}/reviews
+
+// Bad - Avoid verbs in URLs
+GET    /api/getProducts
+POST   /api/createProduct</code></pre>
+
+                <h2>HTTP Methods and Status Codes</h2>
+                <p>Use appropriate HTTP methods and return correct status codes:</p>
+
+                <h3>Common HTTP Methods</h3>
+                <ul>
+                    <li><strong>GET:</strong> Retrieve resources (idempotent, safe)</li>
+                    <li><strong>POST:</strong> Create new resources</li>
+                    <li><strong>PUT:</strong> Update entire resources (idempotent)</li>
+                    <li><strong>PATCH:</strong> Partial updates</li>
+                    <li><strong>DELETE:</strong> Remove resources (idempotent)</li>
+                </ul>
+
+                <h3>Example Controller</h3>
+                <pre><code>[ApiController]
+[Route("api/[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly IProductService _productService;
+
+    public ProductsController(IProductService productService)
+    {
+        _productService = productService;
+    }
+
+    // GET: api/products
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable&lt;ProductDto&gt;), StatusCodes.Status200OK)]
+    public async Task&lt;ActionResult&lt;IEnumerable&lt;ProductDto&gt;&gt;&gt; GetProducts(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var products = await _productService.GetProductsAsync(pageNumber, pageSize);
+        return Ok(products);
+    }
+
+    // GET: api/products/5
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task&lt;ActionResult&lt;ProductDto&gt;&gt; GetProduct(int id)
+    {
+        var product = await _productService.GetProductByIdAsync(id);
+        
+        if (product == null)
+            return NotFound(new { message = $"Product with ID {id} not found" });
+        
+        return Ok(product);
+    }
+
+    // POST: api/products
+    [HttpPost]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task&lt;ActionResult&lt;ProductDto&gt;&gt; CreateProduct(
+        CreateProductDto createDto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var product = await _productService.CreateProductAsync(createDto);
+        
+        return CreatedAtAction(
+            nameof(GetProduct),
+            new { id = product.Id },
+            product);
+    }
+
+    // PUT: api/products/5
+    [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task&lt;IActionResult&gt; UpdateProduct(
+        int id,
+        UpdateProductDto updateDto)
+    {
+        if (id != updateDto.Id)
+            return BadRequest(new { message = "ID mismatch" });
+
+        var exists = await _productService.ProductExistsAsync(id);
+        if (!exists)
+            return NotFound();
+
+        await _productService.UpdateProductAsync(updateDto);
+        return NoContent();
+    }
+
+    // DELETE: api/products/5
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task&lt;IActionResult&gt; DeleteProduct(int id)
+    {
+        var exists = await _productService.ProductExistsAsync(id);
+        if (!exists)
+            return NotFound();
+
+        await _productService.DeleteProductAsync(id);
+        return NoContent();
+    }
+}</code></pre>
+
+                <h2>API Versioning</h2>
+                <p>Implement versioning to maintain backward compatibility:</p>
+
+                <h3>URL Versioning</h3>
+                <pre><code>// Install package
+dotnet add package Microsoft.AspNetCore.Mvc.Versioning
+
+// Configure in Program.cs
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+});
+
+// Version 1 Controller
+[ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
+public class ProductsV1Controller : ControllerBase
+{
+    // V1 implementation
+}
+
+// Version 2 Controller
+[ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("2.0")]
+public class ProductsV2Controller : ControllerBase
+{
+    // V2 implementation with breaking changes
+}</code></pre>
+
+                <h2>Error Handling</h2>
+                <p>Implement consistent error responses across your API:</p>
+
+                <h3>Error Response Model</h3>
+                <pre><code>public class ApiError
+{
+    public int StatusCode { get; set; }
+    public string Message { get; set; }
+    public string Details { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public Dictionary&lt;string, string[]&gt; Errors { get; set; }
+}</code></pre>
+
+                <h3>Global Exception Handler</h3>
+                <pre><code>public class GlobalExceptionHandler : IExceptionHandler
+{
+    private readonly ILogger&lt;GlobalExceptionHandler&gt; _logger;
+
+    public GlobalExceptionHandler(ILogger&lt;GlobalExceptionHandler&gt; logger)
+    {
+        _logger = logger;
+    }
+
+    public async ValueTask&lt;bool&gt; TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogError(exception, "An error occurred: {Message}", 
+            exception.Message);
+
+        var (statusCode, message) = exception switch
+        {
+            NotFoundException => (StatusCodes.Status404NotFound, 
+                exception.Message),
+            ValidationException => (StatusCodes.Status400BadRequest, 
+                exception.Message),
+            UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, 
+                "Unauthorized"),
+            _ => (StatusCodes.Status500InternalServerError, 
+                "An internal server error occurred")
+        };
+
+        var apiError = new ApiError
+        {
+            StatusCode = statusCode,
+            Message = message,
+            Details = exception.StackTrace
+        };
+
+        httpContext.Response.StatusCode = statusCode;
+        await httpContext.Response.WriteAsJsonAsync(apiError, cancellationToken);
+
+        return true;
+    }
+}
+
+// Register in Program.cs
+builder.Services.AddExceptionHandler&lt;GlobalExceptionHandler&gt;();
+builder.Services.AddProblemDetails();</code></pre>
+
+                <h2>Swagger/OpenAPI Documentation</h2>
+                <p>Configure Swagger for comprehensive API documentation:</p>
+                <pre><code>// Configure in Program.cs
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "My API",
+        Version = "v1",
+        Description = "A comprehensive API for product management",
+        Contact = new OpenApiContact
+        {
+            Name = "Rajkumar Bhatt",
+            Email = "your.email@example.com"
+        }
+    });
+
+    // Add XML comments
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+
+    // Add JWT authentication
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty&lt;string&gt;()
+        }
+    });
+});
+
+// Enable Swagger middleware
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+    options.RoutePrefix = string.Empty; // Serve at root
+});</code></pre>
+
+                <h2>Pagination and Filtering</h2>
+                <p>Implement pagination for large datasets:</p>
+                <pre><code>public class PaginationParameters
+{
+    private const int MaxPageSize = 50;
+    private int _pageSize = 10;
+
+    public int PageNumber { get; set; } = 1;
+    
+    public int PageSize
+    {
+        get => _pageSize;
+        set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
+    }
+}
+
+public class PagedResult&lt;T&gt;
+{
+    public List&lt;T&gt; Items { get; set; }
+    public int PageNumber { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+    public int TotalCount { get; set; }
+    public bool HasPrevious => PageNumber > 1;
+    public bool HasNext => PageNumber &lt; TotalPages;
+}
+
+[HttpGet]
+public async Task&lt;ActionResult&lt;PagedResult&lt;ProductDto&gt;&gt;&gt; GetProducts(
+    [FromQuery] PaginationParameters parameters,
+    [FromQuery] string searchTerm = null,
+    [FromQuery] decimal? minPrice = null,
+    [FromQuery] decimal? maxPrice = null)
+{
+    var result = await _productService.GetProductsAsync(
+        parameters, 
+        searchTerm, 
+        minPrice, 
+        maxPrice);
+    
+    return Ok(result);
+}</code></pre>
+
+                <h2>CORS Configuration</h2>
+                <p>Enable Cross-Origin Resource Sharing for client applications:</p>
+                <pre><code>builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", builder =>
+    {
+        builder.WithOrigins("https://backendcraftdev.github.io")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
+});
+
+app.UseCors("AllowSpecificOrigin");</code></pre>
+
+                <h2>Best Practices Summary</h2>
+                <ul>
+                    <li>Use plural nouns for resource names</li>
+                    <li>Return appropriate HTTP status codes</li>
+                    <li>Implement API versioning from the start</li>
+                    <li>Provide comprehensive error messages</li>
+                    <li>Document your API with Swagger/OpenAPI</li>
+                    <li>Implement pagination for collections</li>
+                    <li>Use DTOs to control data exposure</li>
+                    <li>Enable CORS for cross-origin requests</li>
+                    <li>Implement rate limiting for production</li>
+                    <li>Use HTTPS in production environments</li>
+                </ul>
+
+                <h2>Conclusion</h2>
+                <p>Building RESTful APIs with ASP.NET Core Web API provides a robust foundation for modern web services.
+                    By following REST principles, implementing proper error handling, versioning, and documentation, you
+                    create APIs that are intuitive, maintainable, and easy for other developers to consume.</p>
+
+                <p>Remember that API design is about creating a great developer experience. Consistency, clear
+                    documentation, and thoughtful design will make your API a pleasure to work with.</p>
+            </section>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">RESTful API</span>
+                    <span class="tag">ASP.NET Core</span>
+                    <span class="tag">Web API</span>
+                    <span class="tag">Swagger</span>
+                </div>
+                <a href="../index.html" class="back-link">← Back to all posts</a>
+            </footer>
+        </article>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 BackendCraft. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="../about.html">About</a>
+                <a href="../privacy.html">Privacy</a>
+                <a href="../contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

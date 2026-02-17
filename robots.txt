@@ -1,0 +1,7 @@
+# robots.txt for BackendCraft Blog
+# https://backendcraftdev.github.io/
+
+User-agent: *
+Allow: /
+
+Sitemap: https://backendcraftdev.github.io/sitemap.xml
